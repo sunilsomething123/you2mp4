@@ -1,55 +1,32 @@
-document.getElementById('downloadForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-
+document.getElementById('downloadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
     const url = document.getElementById('url').value;
-    const downloadUrl = 'https://<YOUR_BACKEND_URL>/formats';
-    const loading = document.getElementById('loading');
-    const formatsContainer = document.getElementById('formatsContainer');
-    const formatsList = document.getElementById('formatsList');
-    const errorMessage = document.getElementById('errorMessage');
+    document.getElementById('loading').classList.remove('hidden');
 
-    loading.classList.remove('hidden');
-    formatsContainer.classList.add('hidden');
-    errorMessage.classList.add('hidden');
-    formatsList.innerHTML = '';
+    try {
+        const response = await fetch(`https://youtomp4.onrender.com/download?url=${encodeURIComponent(url)}`);
+        const data = await response.json();
+        document.getElementById('loading').classList.add('hidden');
 
-    fetch(downloadUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url: url }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        loading.classList.add('hidden');
-        if (data.error) {
-            errorMessage.textContent = data.error;
-            errorMessage.classList.remove('hidden');
-            return;
-        }
-
-        if (data.formats && data.formats.length > 0) {
+        if (response.ok) {
+            const formatsList = document.getElementById('formatsList');
+            formatsList.innerHTML = '';
             data.formats.forEach(format => {
                 const listItem = document.createElement('li');
                 const link = document.createElement('a');
                 link.href = format.url;
-                link.innerText = format.quality;
-                link.target = '_blank';
+                link.textContent = `${format.quality} (${format.type})`;
                 listItem.appendChild(link);
                 formatsList.appendChild(listItem);
             });
-
-            formatsContainer.classList.remove('hidden');
+            document.getElementById('formatsContainer').classList.remove('hidden');
         } else {
-            errorMessage.textContent = 'No formats found';
-            errorMessage.classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = data.error;
+            document.getElementById('errorMessage').classList.remove('hidden');
         }
-    })
-    .catch(error => {
-        loading.classList.add('hidden');
-        console.error('Error:', error);
-        errorMessage.textContent = 'Error fetching formats';
-        errorMessage.classList.remove('hidden');
-    });
+    } catch (error) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('errorMessage').textContent = 'An error occurred. Please try again.';
+        document.getElementById('errorMessage').classList.remove('hidden');
+    }
 });
